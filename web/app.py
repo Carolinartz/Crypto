@@ -4,16 +4,22 @@ import os
 
 app = Flask(__name__)
 
+def conectar_sqlserver():
+    return pyodbc.connect(
+        f'DRIVER={{SQL Server}};'
+        f'SERVER={os.environ["DB_SERVER"]};'
+        f'DATABASE={os.environ["DB_NAME"]};'
+        f'UID={os.environ["DB_USER"]};'
+        f'PWD={os.environ["DB_PASSWORD"]};'
+    )
+
 @app.route('/')
 def index():
     return render_template("index.html")
 
 @app.route('/api/criptos')
 def api_criptos():
-    # Conexión a SQL Server
-    conexion = pyodbc.connect(
-        'DRIVER={SQL Server};SERVER=localhost\\SQLEXPRESS;DATABASE=TradingSignals;Trusted_Connection=yes;'
-    )
+    conexion = conectar_sqlserver()
     cursor = conexion.cursor()
 
     # Último registro por símbolo
@@ -28,7 +34,7 @@ def api_criptos():
     """)
     ultimos = {row.simbolo: row for row in cursor.fetchall()}
 
-    # Estadísticas por símbolo (última hora)
+    # Estadísticas de la última hora por símbolo
     cursor.execute("""
         SELECT
             simbolo,
@@ -43,7 +49,6 @@ def api_criptos():
 
     conexion.close()
 
-    # Unir los datos
     respuesta = []
     for simbolo, row in ultimos.items():
         stat = stats.get(simbolo)
@@ -61,10 +66,9 @@ def api_criptos():
 
 @app.route('/api/historial/<simbolo>')
 def historial(simbolo):
-    conexion = pyodbc.connect(
-        'DRIVER={SQL Server};SERVER=localhost\\SQLEXPRESS;DATABASE=TradingSignals;Trusted_Connection=yes;'
-    )
+    conexion = conectar_sqlserver()
     cursor = conexion.cursor()
+
     cursor.execute("""
         SELECT fecha, precio_usd
         FROM Criptos
@@ -72,12 +76,11 @@ def historial(simbolo):
         AND CONVERT(date, fecha) = CONVERT(date, GETDATE())
         ORDER BY fecha ASC
     """, simbolo)
+
     rows = cursor.fetchall()
     conexion.close()
 
-    return jsonify([
-        {"fecha": str(r.fecha), "precio": r.precio_usd} for r in rows
-    ])
+    return jsonify([{"fecha": str(r.fecha), "precio": r.precio_usd} for r in rows])
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
