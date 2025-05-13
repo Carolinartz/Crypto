@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Señales de Criptomonedas</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <h1>Tabla de Señales en Tiempo Real</h1>
+  <h2 style="text-align:center">Comparativa de precios actuales</h2>
+  <canvas id="chart-precios" height="100"></canvas>
+    <div class="alerta-historial">
+  Haz clic en la cripto para ver la gráfica del historial del precio
+</div>
+
+  <h2 id="titulo-historial" style="text-align:center; display:none;"></h2>
+<canvas id="chart-historial" height="100"></canvas>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Cripto</th>
+        <th>Precio Actual</th>
+        <th>Más Alto 1H</th>
+        <th>Más Bajo 1H</th>
+        <th>Promedio 1H</th>
+        <th>Señal</th>
+      </tr>
+    </thead>
+    <tbody id="tabla-body"></tbody>
+  </table>
+
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+    <footer style="text-align:center; margin-top: 40px; color: #777;">
+  Página desarrollada por <strong>Diana Ortiz, Valeria Andino, María Fernanda Nieto, Ricardo Cartagena</strong>
+</footer>
+
+</html>
