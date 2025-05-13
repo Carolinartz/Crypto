@@ -2,11 +2,6 @@ from flask import Flask, render_template, jsonify
 import pyodbc
 import os
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
-
-
 app = Flask(__name__)
 
 @app.route('/')
@@ -15,10 +10,25 @@ def index():
 
 @app.route('/api/criptos')
 def api_criptos():
-    conexion = pyodbc.connect('DRIVER={SQL Server};SERVER=localhost\\SQLEXPRESS;DATABASE=TradingSignals;Trusted_Connection=yes;')
+    # Conexión a SQL Server
+    conexion = pyodbc.connect(
+        'DRIVER={SQL Server};SERVER=localhost\\SQLEXPRESS;DATABASE=TradingSignals;Trusted_Connection=yes;'
+    )
     cursor = conexion.cursor()
 
-    # Obtener estadísticas de la última hora
+    # Último registro por símbolo
+    cursor.execute("""
+        SELECT c1.simbolo, c1.precio_usd, c1.senal, c1.fecha
+        FROM Criptos c1
+        INNER JOIN (
+            SELECT simbolo, MAX(fecha) AS max_fecha
+            FROM Criptos
+            GROUP BY simbolo
+        ) c2 ON c1.simbolo = c2.simbolo AND c1.fecha = c2.max_fecha
+    """)
+    ultimos = {row.simbolo: row for row in cursor.fetchall()}
+
+    # Estadísticas por símbolo (última hora)
     cursor.execute("""
         SELECT
             simbolo,
@@ -29,38 +39,31 @@ def api_criptos():
         WHERE fecha >= DATEADD(HOUR, -1, GETDATE())
         GROUP BY simbolo
     """)
-    estadisticas = {row.simbolo: row for row in cursor.fetchall()}
+    stats = {row.simbolo: row for row in cursor.fetchall()}
 
-    # Obtener último precio actual
-    cursor.execute("""
-        SELECT simbolo, precio_usd, senal
-FROM Criptos
-WHERE fecha = (
-    SELECT MAX(fecha) FROM Criptos AS c2 WHERE c2.simbolo = Criptos.simbolo
-)
-    """)
-    actuales = cursor.fetchall()
     conexion.close()
 
-    # Combinar datos
+    # Unir los datos
     respuesta = []
-    for row in actuales:
-        simbolo = row.simbolo
-        stats = estadisticas.get(simbolo)
-
+    for simbolo, row in ultimos.items():
+        stat = stats.get(simbolo)
         respuesta.append({
             "simbolo": simbolo,
             "precio_usd": row.precio_usd,
             "senal": row.senal,
-            "max_1h": stats.max_1h if stats else None,
-            "min_1h": stats.min_1h if stats else None,
-            "prom_1h": stats.prom_1h if stats else None
+            "fecha": str(row.fecha),
+            "max_1h": stat.max_1h if stat else None,
+            "min_1h": stat.min_1h if stat else None,
+            "prom_1h": stat.prom_1h if stat else None
         })
 
     return jsonify(respuesta)
+
 @app.route('/api/historial/<simbolo>')
 def historial(simbolo):
-    conexion = pyodbc.connect('DRIVER={SQL Server};SERVER=localhost\\SQLEXPRESS;DATABASE=TradingSignals;Trusted_Connection=yes;')
+    conexion = pyodbc.connect(
+        'DRIVER={SQL Server};SERVER=localhost\\SQLEXPRESS;DATABASE=TradingSignals;Trusted_Connection=yes;'
+    )
     cursor = conexion.cursor()
     cursor.execute("""
         SELECT fecha, precio_usd
@@ -77,4 +80,5 @@ def historial(simbolo):
     ])
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)

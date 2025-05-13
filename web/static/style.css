@@ -35,27 +35,43 @@ tr:hover {
     background-color: #f0f0f0;
 }
 
+/* Pintar filas por señal */
+tr.comprar {
+    background-color: #e6ffe6 !important; /* verde claro */
+}
+
+tr.vender {
+    background-color: #ffe6e6 !important; /* rojo claro */
+}
+
+/* Indicador de cambio de precio */
 tr.subio {
-    background-color: #d4f4d4;
-    transition: background-color 0.5s ease;
+    border-left: 5px solid #00cc66;
+    transition: border-left 0.3s ease;
 }
 
 tr.bajo {
-    background-color: #f8d4d4;
-    transition: background-color 0.5s ease;
+    border-left: 5px solid #cc0000;
+    transition: border-left 0.3s ease;
 }
+
+/* Footer y mensaje informativo */
+footer {
+    text-align: center;
+    margin-top: 40px;
+    color: #777;
+    font-size: 14px;
+}
+
 .alerta-historial {
-    background-color: #f9fbfc;
+    background-color: #e6f2ff;
     color: #1a1a1a;
     font-size: 16px;
     border-left: 4px solid #3399ff;
-    border-right: 4px solid #3399ff;
-    border-bottom: 4px solid #3399ff;
-    border-top: 4px solid #3399ff;
     padding: 10px 20px;
-    margin-bottom: 2px;
+    margin-bottom: 20px;
     border-radius: 4px;
     text-align: center;
-    width: 50%;
-    box-shadow: 0 0 15px rgba(5, 5, 5, 0.05);
+    width: 100%;
+    box-shadow: 0 0 5px rgba(0,0,0,0.05);
 }

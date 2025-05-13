@@ -2,7 +2,24 @@ let datosAnteriores = {};
 let chart = null;
 let historialChart = null;
 
-// Carga datos generales y dibuja tabla + gráfico de barras
+// Diccionario de nombres por símbolo
+const nombreMap = {
+    BTC: "Bitcoin",
+    ETH: "Ethereum",
+    USDT: "Tether",
+    BNB: "BNB",
+    SOL: "Solana",
+    XRP: "Ripple",
+    DOGE: "Dogecoin",
+    ADA: "Cardano",
+    DOT: "Polkadot",
+    MATIC: "Polygon",
+    SHIB: "Shiba Inu",
+    AVAX: "Avalanche",
+    LTC: "Litecoin",
+    TRX: "TRON"
+};
+
 async function cargarDatos() {
     const res = await fetch('/api/criptos');
     const datos = await res.json();
@@ -13,30 +30,35 @@ async function cargarDatos() {
     datos.forEach(row => {
         const tr = document.createElement('tr');
         const anterior = datosAnteriores[row.simbolo];
+        const nombre = nombreMap[row.simbolo] || row.simbolo;
 
+        // Pintar según señal: rojo si es 'B' (buy), verde en caso contrario
+        if (row.senal === 'B') {
+            tr.classList.add('vender'); // rojo claro
+        } else {
+            tr.classList.add('comprar'); // verde claro
+        }
+
+        // Efecto temporal si cambia el precio
         if (anterior) {
-            if (row.precio_usd > anterior.precio_usd) {
-                tr.classList.add('subio');
-            } else if (row.precio_usd < anterior.precio_usd) {
-                tr.classList.add('bajo');
-            }
-
+            if (row.precio_usd > anterior.precio_usd) tr.classList.add('subio');
+            if (row.precio_usd < anterior.precio_usd) tr.classList.add('bajo');
             setTimeout(() => {
-                tr.classList.remove('subio');
-                tr.classList.remove('bajo');
+                tr.classList.remove('subio', 'bajo');
             }, 1000);
         }
 
         tr.innerHTML = `
             <td>${row.simbolo}</td>
+            <td>${nombre}</td>
             <td>${row.precio_usd?.toFixed(2)}</td>
             <td>${row.max_1h !== null ? row.max_1h.toFixed(2) : '-'}</td>
             <td>${row.min_1h !== null ? row.min_1h.toFixed(2) : '-'}</td>
             <td>${row.prom_1h !== null ? row.prom_1h.toFixed(2) : '-'}</td>
             <td><strong>${row.senal}</strong></td>
+            <td>${new Date(row.fecha).toLocaleString()}</td>
         `;
 
-        // Hacer clic en la fila para mostrar historial
         tr.addEventListener('click', () => {
             mostrarHistorial(row.simbolo);
         });
@@ -48,11 +70,14 @@ async function cargarDatos() {
     actualizarGrafica(datos);
 }
 
-// Gráfico de barras comparativo
 function actualizarGrafica(datos) {
-    const labels = datos.map(d => d.simbolo);
-    const precios = datos.map(d => d.precio_usd);
+    const unicos = {};
+    datos.forEach(d => {
+        if (!unicos[d.simbolo]) unicos[d.simbolo] = d;
+    });
 
+    const labels = Object.keys(unicos);
+    const precios = labels.map(s => unicos[s].precio_usd);
     const ctx = document.getElementById('chart-precios').getContext('2d');
 
     if (chart) {
@@ -82,14 +107,12 @@ function actualizarGrafica(datos) {
     }
 }
 
-// Mostrar historial por símbolo al hacer clic
 function mostrarHistorial(simbolo) {
     fetch(`/api/historial/${simbolo}`)
         .then(res => res.json())
         .then(data => {
             const labels = data.map(p => new Date(p.fecha).toLocaleTimeString());
             const precios = data.map(p => p.precio);
-
             const ctx = document.getElementById('chart-historial').getContext('2d');
             document.getElementById('titulo-historial').textContent = `Historial de ${simbolo}`;
             document.getElementById('titulo-historial').style.display = 'block';
@@ -123,6 +146,5 @@ function mostrarHistorial(simbolo) {
         });
 }
 
-// Inicialización
 cargarDatos();
-setInterval(cargarDatos, 100);
+setInterval(cargarDatos, 1000);
