@@ -6,11 +6,12 @@ app = Flask(__name__)
 
 def conectar_sqlserver():
     return pyodbc.connect(
-        f'DRIVER={{SQL Server}};'
-        f'SERVER={os.environ["DB_SERVER"]};'
-        f'DATABASE={os.environ["DB_NAME"]};'
-        f'UID={os.environ["DB_USER"]};'
-        f'PWD={os.environ["DB_PASSWORD"]};'
+        f"DRIVER={{ODBC Driver 18 for SQL Server}};"
+        f"SERVER={os.environ['DB_SERVER']};"
+        f"DATABASE={os.environ['DB_NAME']};"
+        f"UID={os.environ['DB_USER']};"
+        f"PWD={os.environ['DB_PASSWORD']};"
+        f"TrustServerCertificate=yes;"
     )
 
 @app.route('/')
@@ -22,7 +23,7 @@ def api_criptos():
     conexion = conectar_sqlserver()
     cursor = conexion.cursor()
 
-    # Último registro por símbolo
+    # Último precio por símbolo
     cursor.execute("""
         SELECT c1.simbolo, c1.precio_usd, c1.senal, c1.fecha
         FROM Criptos c1
@@ -34,7 +35,7 @@ def api_criptos():
     """)
     ultimos = {row.simbolo: row for row in cursor.fetchall()}
 
-    # Estadísticas de la última hora por símbolo
+    # Estadísticas 1 hora por símbolo
     cursor.execute("""
         SELECT
             simbolo,
@@ -80,7 +81,9 @@ def historial(simbolo):
     rows = cursor.fetchall()
     conexion.close()
 
-    return jsonify([{"fecha": str(r.fecha), "precio": r.precio_usd} for r in rows])
+    return jsonify([
+        {"fecha": str(r.fecha), "precio": r.precio_usd} for r in rows
+    ])
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
